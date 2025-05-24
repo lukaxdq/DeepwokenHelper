@@ -36,8 +36,7 @@ https://github.com/Tuxsupa/DeepwokenHelper/assets/69093264/2ebfd1d8-cad2-4076-93
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), use `uv python install 3.12`, `uv venv --python 3.12` and `uv sync` on the repository folder.\
 Then you need to clone [Ultralytics Yolov5](https://github.com/ultralytics/yolov5) repository onto the home directory of this repository.\
 Finally you need to install [Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) and paste the folder to the home directory of this repository. Don't forget to rename the folder to `tesseract` after pasting it.
-\
-\
+
 To build the application, I use [PyInstaller](https://pyinstaller.org/en/stable/installation.html).\
 Then, use this command on the repo's home directory for onedir output (You can use onefile but it's more susceptible to getting a false positive from a AV).
 ```
@@ -47,9 +46,8 @@ Finally copy `assets`, `tesseract` and `yolov5` folder into the output folder th
 
 # Support
 If you really like this project, please consider making a small donation, it really helps and means a lot!
-\
-\
-<a href='https://ko-fi.com/tuxsuper' target='_blank'><img height='35' style='border:0px;height:46px;' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' />
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/tuxsuper)
 
 # Special Thanks
 
