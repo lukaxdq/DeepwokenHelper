@@ -1,25 +1,25 @@
 [project]
 requires-python = ">=3.12"
 dependencies = [
-    "PyQt6~=6.8.0",
+    "PyQt6~=6.9.0",
     "opencv-python~=4.11.0.86",
-    "pywin32==308",
-    "pynput~=1.7.7",
+    "pywin32==310",
+    "pynput~=1.8.1",
     "pytesseract~=0.3.13",
-    "pytest~=8.3.4",
+    "pytest~=8.3.5",
     "requests~=2.32.3",
     "imutils~=0.5.4",
     "keyboard~=0.13.5",
-    "ultralytics~=8.3.70",
+    "ultralytics~=8.3.144",
     "WMI~=1.5.1",
     "onnx~=1.17.0",
-    "onnxruntime~=1.20.1",
+    "onnxruntime==1.20.1",
     "toml~=0.10.2",
     "thefuzz~=0.22.1",
     "qtwaitingspinner @ git+https://github.com/z3ntu/QtWaitingSpinner.git",
 ]
 name = "DeepwokenHelper"
-version = "1.1.1.2"
+version = "1.1.1.3"
 description = "Deepwoken Helper to help you choose your cards."
 readme = "README.md"
 

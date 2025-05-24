@@ -78,7 +78,7 @@ class Tooltip(QFrame):
         type_cards = ocr.get_type_card()
 
         for exclusive in self.data["exclusiveWith"]:
-            if not exclusive:
+            if not exclusive or exclusive.lower() not in type_cards:
                 continue
 
             data_exclusive = type_cards[exclusive.lower()]
@@ -199,7 +199,7 @@ class Card(QWidget):
             type_cards = ocr.get_type_card()
 
             for exclusive in data["exclusiveWith"]:
-                if not exclusive:
+                if not exclusive or exclusive.lower() not in type_cards:
                     continue
                 
                 data_exclusive = type_cards[exclusive.lower()]
