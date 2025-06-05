@@ -2,6 +2,7 @@ import re
 import os
 import threading
 import logging
+import contextlib
 
 
 import cv2
@@ -398,12 +399,10 @@ class Screenshot:
         return img
 
     def bitblt_method(self):
-        try:
+        with contextlib.suppress(Exception):
             from ctypes import windll
 
             windll.user32.SetProcessDPIAware()
-        except:
-            pass
 
         w = self.client_rect[2]
         h = self.client_rect[3]
