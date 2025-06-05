@@ -1,5 +1,6 @@
 import re
 import os
+import threading
 
 import cv2
 import numpy as np
@@ -9,6 +10,7 @@ from pynput import keyboard
 from thefuzz import fuzz
 
 from ultralytics import YOLO
+from windows_capture import WindowsCapture, Frame, InternalCaptureControl
 
 import win32gui
 import win32ui
@@ -16,6 +18,8 @@ import win32con
 
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QKeySequence, QWindow
+
+from deepwokenhelper.gui.control_panel import ScreenshotMethod
 
 import logging
 logger = logging.getLogger("helper")
@@ -79,54 +83,6 @@ class DeepwokenOCR(QObject):
 
                     if self.hwnd == decimal_value:
                         return file_path
-
-
-    def get_screenshot(self):
-        # get the window size
-        window_rect = win32gui.GetWindowRect(self.hwnd)
-        
-        w = window_rect[2] - window_rect[0]
-        h = window_rect[3] - window_rect[1]
-
-        # account for the window border and titlebar and cut them off
-        border_pixels = 8
-        titlebar_pixels = 30
-        w = w - (border_pixels * 2)
-        h = h - titlebar_pixels - border_pixels
-        cropped_x = border_pixels
-        cropped_y = titlebar_pixels
-
-        # set the cropped coordinates offset so we can translate screenshot
-        # images into actual screen positions
-        # offset_x = window_rect[0] + cropped_x
-        # offset_y = window_rect[1] + cropped_y
-
-        # get the window image data
-        wDC = win32gui.GetWindowDC(self.hwnd)
-        dcObj = win32ui.CreateDCFromHandle(wDC)
-        cDC = dcObj.CreateCompatibleDC()
-        dataBitMap = win32ui.CreateBitmap()
-        dataBitMap.CreateCompatibleBitmap(dcObj, w, h)
-        cDC.SelectObject(dataBitMap)
-        cDC.BitBlt((0, 0), (w, h), dcObj, (cropped_x, cropped_y), win32con.SRCCOPY)
-
-        # convert the raw data into a format opencv can read
-        #dataBitMap.SaveBitmapFile(cDC, 'debug.bmp')
-        signedIntsArray = dataBitMap.GetBitmapBits(True)
-        img = np.fromstring(signedIntsArray, dtype='uint8')
-        img.shape = (h, w, 4)
-
-        # free resources
-        dcObj.DeleteDC()
-        cDC.DeleteDC()
-        win32gui.ReleaseDC(self.hwnd, wDC)
-        win32gui.DeleteObject(dataBitMap.GetHandle())
-
-        img = img[...,:3]
-        # img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-        
-        return np.ascontiguousarray(img)
-
 
     def get_choice_type(self, log_path):
         if not log_path:
@@ -250,16 +206,15 @@ class DeepwokenOCR(QObject):
             self.helper.errorSignal.emit('Roblox window not found.')
             raise Exception('Roblox not found')
 
-        log_path = self.get_window_log()
-        self.choice_type = self.get_choice_type(log_path)
+        self.log_path = self.get_window_log()
+        self.choice_type = self.get_choice_type(self.log_path)
 
         logger.info(self.choice_type)
         if self.choice_type in ["nil", "Trait"]:
             self.helper.loadingSignal.emit(False)
             return
 
-
-        screenshot = self.get_screenshot()
+        screenshot = Screenshot(self).get_screenshot()
         gray = cv2.cvtColor(screenshot.copy(), cv2.COLOR_RGB2GRAY)
 
         results = self.model(screenshot, iou=0.5)[0].cpu().numpy()
@@ -369,3 +324,128 @@ class Hotkeys():
 
             if self.ocr.helper.data:
                 self.ocr.processSignal.emit()
+
+
+class Screenshot():
+    def __init__(self, ocr: DeepwokenOCR):
+        self.ocr = ocr
+        
+        self.hwnd = ocr.hwnd
+        self.frame_event = threading.Event()
+        
+        settings = ocr.helper.settings
+        
+        self.screenshot_method = settings.value("screenshotMethod", ScreenshotMethod.AUTOMATIC, ScreenshotMethod)
+        
+        window_rect = win32gui.GetWindowRect(self.hwnd)
+        self.client_rect = win32gui.GetClientRect(self.hwnd)
+        
+        self.border_width = (window_rect[2] - window_rect[0] - self.client_rect[2]) // 2
+        self.titlebar_height = window_rect[3] - window_rect[1] - self.client_rect[3] - self.border_width
+        
+    def wgc_method(self):
+        capture = WindowsCapture(cursor_capture=False, window_name="Roblox")
+        self.captured_frame = None
+        
+        @capture.event
+        def on_frame_arrived(frame: Frame, capture_control: InternalCaptureControl):
+            if self.captured_frame is not None:
+                return
+            
+            captured_frame = frame.frame_buffer.copy()
+            self.captured_frame = captured_frame[self.titlebar_height:, :]
+            
+            self.frame_event.set()
+
+            capture_control.stop()
+        
+        @capture.event
+        def on_closed():
+            print("Capture Session Closed")
+        
+        capture.start_free_threaded()
+        self.frame_event.wait(5)
+        
+        img = self.captured_frame[...,:3]
+        
+        return img
+    
+    def bitblt_method(self):
+        try:
+            from ctypes import windll
+            windll.user32.SetProcessDPIAware()
+        except:
+            pass
+        
+        w = self.client_rect[2]
+        h = self.client_rect[3]
+        cropped_x = self.border_width
+        cropped_y = self.titlebar_height
+
+        # get the window image data
+        wDC = win32gui.GetWindowDC(self.hwnd)
+        dcObj = win32ui.CreateDCFromHandle(wDC)
+        cDC = dcObj.CreateCompatibleDC()
+        dataBitMap = win32ui.CreateBitmap()
+        dataBitMap.CreateCompatibleBitmap(dcObj, w, h)
+        cDC.SelectObject(dataBitMap)
+        cDC.BitBlt((0, 0), (w, h), dcObj, (cropped_x, cropped_y), win32con.SRCCOPY)
+
+        # convert the raw data into a format opencv can read
+        #dataBitMap.SaveBitmapFile(cDC, 'debug.bmp')
+        signedIntsArray = dataBitMap.GetBitmapBits(True)
+        img = np.fromstring(signedIntsArray, dtype='uint8')
+        img.shape = (h, w, 4)
+        
+        dcObj.DeleteDC()
+        cDC.DeleteDC()
+        win32gui.ReleaseDC(self.hwnd, wDC)
+        win32gui.DeleteObject(dataBitMap.GetHandle())
+
+        img = img[...,:3]
+        # img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+        
+        return np.ascontiguousarray(img)
+
+
+    def get_renderer(self, log_path):
+        if not log_path:
+            return
+        
+        with open(log_path, 'r') as file:
+            lines = file.readlines()
+
+        search_pattern = r"FFlagDebugGraphicsPrefer(\w+)"
+        for line in lines:
+            line = line.strip()
+            match = re.search(search_pattern, line)
+
+            if match:
+                renderer = match[1].replace("FFlagDebugGraphicsPrefer", "")
+                return renderer
+
+
+    def get_screenshot(self):
+        if self.screenshot_method == ScreenshotMethod.AUTOMATIC:
+            renderer = self.get_renderer(self.ocr.log_path)
+            
+            if renderer in ("Vulkan", "OpenGL"):
+                logger.info("Using WGC screenshot method.")
+                screenshot = self.wgc_method()
+            else:
+                logger.info("Using BitBlt screenshot method.")
+                screenshot = self.bitblt_method()
+
+        elif self.screenshot_method == ScreenshotMethod.BITBLT:
+            logger.info("Using BitBlt screenshot method.")
+            screenshot = self.bitblt_method()
+
+        elif self.screenshot_method == ScreenshotMethod.WGC:
+            logger.info("Using WGC screenshot method.")
+            screenshot = self.wgc_method()
+        
+        # cv2.namedWindow("test", cv2.WINDOW_NORMAL)
+        # cv2.imshow('test', screenshot)
+        # cv2.waitKey(0)
+        
+        return screenshot

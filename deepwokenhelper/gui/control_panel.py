@@ -1,5 +1,6 @@
 import re
 import webbrowser
+from enum import Enum
 
 from PyQt6.QtCore import *
 from PyQt6.QtWidgets import *
@@ -683,6 +684,12 @@ class InfoWindow(QWidget):
         return tutorial_group
 
 
+class ScreenshotMethod(Enum):
+    AUTOMATIC = 0
+    BITBLT = 1
+    WGC = 2
+
+
 class SettingsWindow(QWidget):
     def __init__(self, stats: ControlPanel):
         super().__init__()
@@ -718,6 +725,10 @@ class SettingsWindow(QWidget):
         hotkey_group = QGroupBox("Screenshot Hotkey")
         hotkey_group.setFont(self.fontText)
         hotkey_group.setStyleSheet("QGroupBox::title { color: rgb(255, 255, 255); }")
+        hotkey_group.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed
+        )
         hotkey_layout = QVBoxLayout(hotkey_group)
         
         layout = QHBoxLayout()
@@ -749,6 +760,35 @@ class SettingsWindow(QWidget):
         
         main_layout.addWidget(hotkey_group)
         
+        layout = QHBoxLayout()
+        label = QLabel("Screenshot Method:")
+        label.setFont(self.fontText)
+        label.setStyleSheet("color: rgb(255, 255, 255);")
+        layout.addWidget(label, 0)
+        
+        self.comboBox = QComboBox()
+        self.comboBox.addItem("Automatic", ScreenshotMethod.AUTOMATIC)
+        self.comboBox.addItem("BitBlt (Windows 7+)", ScreenshotMethod.BITBLT)
+        self.comboBox.addItem("WGC (Windows 10+ | Yellow Bars)", ScreenshotMethod.WGC)
+        
+        screenshotMethod = self.settings.value("screenshotMethod", ScreenshotMethod.AUTOMATIC, ScreenshotMethod)
+        self.comboBox.setCurrentIndex(screenshotMethod.value)
+        
+        stylesheet = f"""
+            QComboBox {{
+                font-size: {self.fontText.pointSize()}px;
+                padding: 0px 0px 0px 0px;
+            }}
+        """
+        
+        self.comboBox.setStyleSheet(stylesheet)
+        layout.addWidget(self.comboBox, 1)
+        
+        main_layout.addLayout(layout)
+        main_layout.addStretch()
+        
+        main_layout.addItem(QSpacerItem(0, 0, vPolicy=QSizePolicy.Policy.Expanding))
+        
         QBtn = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
 
         buttonBox = QDialogButtonBox(QBtn)
@@ -768,6 +808,9 @@ class SettingsWindow(QWidget):
         
         key_sequence = self.settings.value("screenshotHotkey2", QKeySequence())
         self.keySequence2.setKeySequence(key_sequence)
+        
+        screenshotMethod = self.settings.value("screenshotMethod", ScreenshotMethod.AUTOMATIC, ScreenshotMethod)
+        self.comboBox.setCurrentIndex(screenshotMethod.value)
 
     def accept(self):
         if self.keySequence1.keySequence().isEmpty():
@@ -782,6 +825,7 @@ class SettingsWindow(QWidget):
         self.settings.setValue("giveFocus", self.checkBox.isChecked())
         self.settings.setValue("screenshotHotkey1", self.keySequence1.keySequence())
         self.settings.setValue("screenshotHotkey2", self.keySequence2.keySequence())
+        self.settings.setValue("screenshotMethod", self.comboBox.currentData())
         logger.info("Settings changes saved.")
         
         self.hide()
