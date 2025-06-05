@@ -26,7 +26,6 @@ readme = "README.md"
 
 [[project.authors]]
 name = "Tuxsuper"
-email = "69093264+Tuxsupa@users.noreply.github.com"
 
 [project.license]
 text = "GPL-3.0-only"
