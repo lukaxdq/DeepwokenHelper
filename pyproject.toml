@@ -16,6 +16,7 @@ dependencies = [
     "onnxruntime==1.20.1",
     "toml~=0.10.2",
     "thefuzz~=0.22.1",
+    "windows-capture~=1.4.4",
     "qtwaitingspinner @ git+https://github.com/z3ntu/QtWaitingSpinner.git",
 ]
 name = "DeepwokenHelper"
