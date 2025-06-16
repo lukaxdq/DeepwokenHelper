@@ -7,10 +7,10 @@ dependencies = [
     "pynput~=1.8.1",
     "pytesseract~=0.3.13",
     "pytest~=8.4.0",
-    "requests~=2.32.3",
+    "requests~=2.32.4",
     "imutils~=0.5.4",
     "keyboard~=0.13.5",
-    "ultralytics~=8.3.150",
+    "ultralytics~=8.3.155",
     "WMI~=1.5.1",
     "onnx~=1.17.0",
     "onnxruntime==1.20.1",
@@ -20,7 +20,7 @@ dependencies = [
     "qtwaitingspinner @ git+https://github.com/z3ntu/QtWaitingSpinner.git",
 ]
 name = "DeepwokenHelper"
-version = "1.2.0"
+version = "1.2.1"
 description = "Deepwoken Helper to help you choose your cards."
 readme = "README.md"
 
