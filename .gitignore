@@ -5,10 +5,13 @@ __pycache__
 yolov5/
 tesseract/
 *.spec
+*.egg-info
+*.py[oc]
 build/
 dist/
 tests/
-logs/
 setups/
 setup.iss
 .sourcery.yaml
+build.py
+version_info.txt

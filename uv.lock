@@ -160,10 +160,10 @@ requires-dist = [
     { name = "pytest", specifier = "~=8.4.0" },
     { name = "pywin32", specifier = "==310" },
     { name = "qtwaitingspinner", git = "https://github.com/z3ntu/QtWaitingSpinner.git" },
-    { name = "requests", specifier = "~=2.32.3" },
+    { name = "requests", specifier = "~=2.32.4" },
     { name = "thefuzz", specifier = "~=0.22.1" },
     { name = "toml", specifier = "~=0.10.2" },
-    { name = "ultralytics", specifier = "~=8.3.150" },
+    { name = "ultralytics", specifier = "~=8.3.155" },
     { name = "windows-capture", specifier = "~=1.4.4" },
     { name = "wmi", specifier = "~=1.5.1" },
 ]
@@ -3564,7 +3564,7 @@ wheels = [
 
 [[package]]
 name = "requests"
-version = "2.32.3"
+version = "2.32.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -3572,9 +3572,9 @@ dependencies = [
     { name = "idna" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/63/70/2bf7780ad2d390a8d301ad0b550f1581eadbd9a20f896afe06353c2a2913/requests-2.32.3.tar.gz", hash = "sha256:55365417734eb18255590a9ff9eb97e9e1da868d4ccd6402399eaf68af20a760", size = 131218, upload-time = "2024-05-29T15:37:49.536Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/0a/929373653770d8a0d7ea76c37de6e41f11eb07559b103b1c02cafb3f7cf8/requests-2.32.4.tar.gz", hash = "sha256:27d0316682c8a29834d3264820024b62a36942083d52caf2f14c0591336d3422", size = 135258, upload-time = "2025-06-09T16:43:07.34Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f9/9b/335f9764261e915ed497fcdeb11df5dfd6f7bf257d4a6a2a686d80da4d54/requests-2.32.3-py3-none-any.whl", hash = "sha256:70761cfe03c773ceb22aa2f671b4757976145175cdfca038c02654d061d6dcc6", size = 64928, upload-time = "2024-05-29T15:37:47.027Z" },
+    { url = "https://files.pythonhosted.org/packages/7c/e4/56027c4a6b4ae70ca9de302488c5ca95ad4a39e190093d6c1a8ace08341b/requests-2.32.4-py3-none-any.whl", hash = "sha256:27babd3cda2a6d50b30443204ee89830707d396671944c998b5975b031ac2b2c", size = 64847, upload-time = "2025-06-09T16:43:05.728Z" },
 ]
 
 [[package]]
@@ -3746,7 +3746,7 @@ wheels = [
 
 [[package]]
 name = "ultralytics"
-version = "8.3.150"
+version = "8.3.155"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
@@ -3764,9 +3764,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "ultralytics-thop" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/39/fa/308e759a2ed6d46da362e209acb7cadc5937d9069a8ef94686e54cb350af/ultralytics-8.3.150.tar.gz", hash = "sha256:ffeb6ed91b2bb91eafd89580cb51a7b01b9e3a04a64b91c77e68bfa41d14ed58", size = 894562, upload-time = "2025-06-04T19:58:03.349Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/60/3c97f37ae21dc4e4e4eb565176b7827ac36e28ae766947dd72ea06eb9f32/ultralytics-8.3.155.tar.gz", hash = "sha256:79be12ef1824afb8b392a02c21d00916ceee51474b3b7a77d92896f36c954d2f", size = 892692, upload-time = "2025-06-14T11:18:27.247Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2c/80/95751dbd922ef49924f98c5ad05c9154dc2730e389d7841a47ee3524efea/ultralytics-8.3.150-py3-none-any.whl", hash = "sha256:4bd99f2c33d8372c67813eb150a4d8a755cc49f159ab9382b0650799f724d886", size = 1040477, upload-time = "2025-06-04T19:58:00.753Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/fe/257faf63d2c310b3c9343fca7e1adc63a16c34ff5a097824313460589830/ultralytics-8.3.155-py3-none-any.whl", hash = "sha256:dbf35a19b5ac54adfc327cefc27429e0915896efa6b737bc48d025eb710d6483", size = 1039720, upload-time = "2025-06-14T11:18:24.67Z" },
 ]
 
 [[package]]

@@ -12,6 +12,13 @@ from deepwokenhelper.ocr import DeepwokenOCR
 logger = logging.getLogger("helper")
 
 
+class BlackLabel(QLabel):
+    def __init__(self, text: str | None = None):
+        super().__init__(text)
+
+        self.setStyleSheet("color: rgb(0, 0, 0);")
+
+
 class Tooltip(QFrame):
     def __init__(self, data: dict):
         super().__init__()
@@ -36,29 +43,32 @@ class Tooltip(QFrame):
     def card_tooltip(self):
         self.has_tooltip = True
 
-        tags = QWidget()
+        tags = BlackLabel()
         tags_layout = QGridLayout(tags)
         tags_layout.setContentsMargins(0, 0, 0, 0)
 
         if self.data.get("reqs"):
             if int(self.data["reqs"]["power"]) > 0:
-                label = QLabel(f"<b>Power</b>: {self.data['reqs']['power']}")
+                label = BlackLabel(f"<b>Power</b>: {self.data['reqs']['power']}")
+                label.setWordWrap(True)
                 tags_layout.addWidget(label)
 
             for statName, statAmount in self.data["reqs"]["base"].items():
                 if statAmount != 0:
-                    label = QLabel(f"<b>{statName}</b>: {statAmount}")
+                    label = BlackLabel(f"<b>{statName}</b>: {statAmount}")
+                    label.setWordWrap(True)
                     tags_layout.addWidget(label)
 
             if self.data["reqs"]["weapon"]:
                 for statName, statAmount in self.data["reqs"]["weapon"].items():
                     if statAmount != 0:
-                        label = QLabel(f"<b>{statName}</b>: {statAmount}")
+                        label = BlackLabel(f"<b>{statName}</b>: {statAmount}")
+                        label.setWordWrap(True)
                         tags_layout.addWidget(label)
 
             for statName, statAmount in self.data["reqs"]["attunement"].items():
                 if statAmount != 0:
-                    label = QLabel(f"<b>{statName}</b>: {statAmount}")
+                    label = BlackLabel(f"<b>{statName}</b>: {statAmount}")
                     tags_layout.addWidget(label)
 
         if self.data.get("diffReqs"):
@@ -67,13 +77,15 @@ class Tooltip(QFrame):
                     suffix = (
                         " <b>OR</b> " if idx + 1 < len(self.data["diffReqs"]) else ""
                     )
-                    label = QLabel(f"<b>{statName}</b>: {statAmount}{suffix}")
+                    label = BlackLabel(f"<b>{statName}</b>: {statAmount}{suffix}")
                     tags_layout.addWidget(label)
 
-        self.main_layout.addWidget(tags)
-        tags.setFixedWidth(self.WIDTH)
+        if tags_layout.count() > 0:
+            self.main_layout.addWidget(tags)
+            tags.setFixedWidth(self.WIDTH)
 
-        desc_label = QLabel(self.data.get("desc"))
+        desc: str = self.data.get("desc")
+        desc_label = BlackLabel(desc.strip() if desc else "")
         desc_label.setWordWrap(True)
         desc_label.adjustSize()
         self.main_layout.addWidget(desc_label)
@@ -104,7 +116,7 @@ class Tooltip(QFrame):
             lock_taken_icon.setPixmap(pixmap)
             locked_layout.addWidget(lock_taken_icon)
 
-            lock_taken_label = QLabel(f"<b>{data_exclusive['name']}</b>:")
+            lock_taken_label = BlackLabel(f"<b>{data_exclusive['name']}</b>:")
             lock_taken_label.setMouseTracking(True)
 
             locked_layout.addWidget(lock_taken_label, 1)
@@ -112,7 +124,7 @@ class Tooltip(QFrame):
             self.main_layout.addWidget(locked)
             locked.setFixedWidth(self.WIDTH)
 
-            desc_label = QLabel(data_exclusive.get("desc"))
+            desc_label = BlackLabel(data_exclusive.get("desc"))
             desc_label.setWordWrap(True)
             desc_label.adjustSize()
 
@@ -139,12 +151,12 @@ class Tooltip(QFrame):
             icon.setPixmap(pixmap)
             titles_layout.addWidget(icon)
 
-            title_label = QLabel(f"<b>{forTaken}</b>:")
+            title_label = BlackLabel(f"<b>{forTaken}</b>:")
             titles_layout.addWidget(title_label, 1)
             self.main_layout.addWidget(titles)
             titles.setFixedWidth(self.WIDTH)
 
-            desc_label = QLabel(data_forTaken.get("desc"))
+            desc_label = BlackLabel(data_forTaken.get("desc"))
             desc_label.setWordWrap(True)
             desc_label.adjustSize()
             self.main_layout.addWidget(desc_label)

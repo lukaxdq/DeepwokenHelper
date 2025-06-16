@@ -1,4 +1,6 @@
 import re
+import os
+import subprocess
 import logging
 import webbrowser
 from enum import Enum
@@ -74,6 +76,21 @@ class ControlPanel(QWidget):
 
         main_layout.addLayout(layout)
 
+    def set_color(self, widget: QWidget, color_role: QPalette.ColorRole):
+        palette = widget.palette()
+
+        palette.setColor(
+            QPalette.ColorGroup.Active,
+            color_role,
+            QColor(0, 0, 0),
+        )
+        palette.setColor(
+            QPalette.ColorGroup.Inactive,
+            color_role,
+            QColor(0, 0, 0),
+        )
+        widget.setPalette(palette)
+
     def traits(self):
         self.trait_values = {}
 
@@ -90,11 +107,13 @@ class ControlPanel(QWidget):
 
             nameLabel = QLabel(name)
             nameLabel.setFixedWidth(100)
+            self.set_color(nameLabel, QPalette.ColorRole.WindowText)
             nameLabel.setStyleSheet("font-size: 15px; font-weight: 600;")
             layout.addWidget(nameLabel)
 
             valueLabel = QLabel(str(value))
             valueLabel.setFixedWidth(40)
+            self.set_color(valueLabel, QPalette.ColorRole.WindowText)
             valueLabel.setStyleSheet(
                 "background-color: transparent; border-radius: 5px; border: 1px solid rgba(0, 0, 0, .25); padding: 2px;"
             )
@@ -123,22 +142,27 @@ class ControlPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         title = QLabel("Builds")
+        self.set_color(title, QPalette.ColorRole.WindowText)
         title.setFixedWidth(80)
         title.setStyleSheet("font-size: 15px; font-weight: 600;")
         layout.addWidget(title, 1)
 
         self.comboBox = QComboBox()
+        self.set_color(self.comboBox, QPalette.ColorRole.Text)
         self.comboBox.setMinimumWidth(40)
         self.comboBox.setMaximumHeight(30)
         self.comboBox.setObjectName("comboBox")
         self.comboBox.setStyleSheet("""#comboBox { background-color: rgb(216, 215, 202);
                                 border-radius: 5px;
                                 border: 1px solid rgba(0, 0, 0, .25);
+                                padding-left: 5px;
                                 }
 
                                 #comboBox QListView { background-color: rgb(216, 215, 202);
                                 border-radius: 5px;
                                 border: 1px solid rgba(0, 0, 0, .25);
+                                color: rgb(0, 0, 0);
+                                selection-color: rgb(0, 0, 0);
                                 }
 
                                 #comboBox::drop-down {
@@ -166,11 +190,13 @@ class ControlPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         title = QLabel("Build Name")
+        self.set_color(title, QPalette.ColorRole.WindowText)
         title.setFixedWidth(80)
         title.setStyleSheet("font-size: 15px; font-weight: 600;")
         layout.addWidget(title, 1)
 
         self.buildName = QLabel()
+        self.set_color(self.buildName, QPalette.ColorRole.WindowText)
         self.buildName.setMinimumWidth(40)
         self.buildName.setMaximumHeight(30)
         self.buildName.setStyleSheet("""background-color: transparent;
@@ -186,11 +212,13 @@ class ControlPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         title = QLabel("Author")
+        self.set_color(title, QPalette.ColorRole.WindowText)
         title.setFixedWidth(80)
         title.setStyleSheet("font-size: 15px; font-weight: 600;")
         layout.addWidget(title, 1)
 
         self.buildAuthor = QLabel()
+        self.set_color(self.buildAuthor, QPalette.ColorRole.WindowText)
         self.buildAuthor.setMinimumWidth(40)
         self.buildAuthor.setMaximumHeight(30)
         self.buildAuthor.setStyleSheet("""background-color: transparent;
@@ -528,10 +556,16 @@ class GithubWindow(QMessageBox):
         super().__init__(parent)
         # self.setWindowFlag(Qt.WindowType.Popup)
         self.setWindowTitle("GitHub")
+        bg_color = self.palette().color(QPalette.ColorRole.Window)
+        use_dark_icon = bg_color.value() > 128
 
         self.setText("Open link?")
 
-        pixmap = QIcon("./assets/gui/github-black.png")
+        if use_dark_icon:
+            pixmap = QIcon("./assets/gui/github-black.png")
+        else:
+            pixmap = QIcon("./assets/gui/github.png")
+
         self.setIconPixmap(pixmap.pixmap(QSize(30, 30)))
 
         self.setStandardButtons(
@@ -554,8 +588,7 @@ class InfoWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__()
 
-        # self.resize(1235, 1050)
-        self.resize(615, 525)
+        self.resize(615, 575)
 
         self.fontText = QFont()
         self.fontText.setPointSize(12)
@@ -582,6 +615,16 @@ class InfoWindow(QWidget):
         main_layout.addWidget(tutorial_group)
 
         main_layout.addItem(QSpacerItem(0, 0, vPolicy=QSizePolicy.Policy.Expanding))
+
+        bottom_layout = QHBoxLayout()
+        bottom_layout.addItem(QSpacerItem(0, 0, hPolicy=QSizePolicy.Policy.Expanding))
+
+        open_logs_button = QPushButton("Open Logs Folder")
+        open_logs_button.setFixedSize(170, 30)
+        open_logs_button.clicked.connect(self.open_logs_folder)
+        bottom_layout.addWidget(open_logs_button)
+
+        main_layout.addLayout(bottom_layout)
 
     def set_icon_group(self):
         icon_group = QGroupBox("Icons")
@@ -713,6 +756,17 @@ class InfoWindow(QWidget):
 
         return tutorial_group
 
+    def open_logs_folder(self):
+        from deepwokenhelper.logging import LOG_FOLDER
+
+        if os.path.exists(LOG_FOLDER):
+            try:
+                subprocess.Popen(f'explorer "{LOG_FOLDER}"')
+            except Exception as e:
+                logger.error(f"Failed to open logs folder: {e}")
+        else:
+            logger.warning("Logs folder does not exist.")
+
 
 class ScreenshotMethod(Enum):
     AUTOMATIC = 0
@@ -810,6 +864,7 @@ class SettingsWindow(QWidget):
             QComboBox {{
                 font-size: {self.fontText.pointSize()}px;
                 padding: 0px 0px 0px 0px;
+                padding-left: 3px;
             }}
         """
 
