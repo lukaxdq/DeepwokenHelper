@@ -69,9 +69,16 @@ class UpdateWindow(QMessageBox):
         super().__init__(helper)
 
         self.setWindowTitle("New Release")
+        bg_color = self.palette().color(QPalette.ColorRole.Window)
+        use_dark_icon = bg_color.value() > 128
+
         self.setText("A new update is available. Do you want to update?")
 
-        pixmap = QIcon("./assets/gui/github-black.png")
+        if use_dark_icon:
+            pixmap = QIcon("./assets/gui/github-black.png")
+        else:
+            pixmap = QIcon("./assets/gui/github.png")
+
         self.setIconPixmap(pixmap.pixmap(QSize(30, 30)))
 
         self.setStandardButtons(
