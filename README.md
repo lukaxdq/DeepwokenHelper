@@ -23,26 +23,24 @@ https://github.com/Tuxsupa/DeepwokenHelper/assets/69093264/2ebfd1d8-cad2-4076-93
 # Potential Enhancements
 - Overlay showing the card info on the cards themselfs ingame.
 - Add/Remove cards manually in case of wrong detections.
-- Turn on and off the AI model so it's not always loaded in the background.
 - Testing and working macOS version.
 - Order of which stats to get first to get an optimized build.
 - Recommendation on which card to get next.
 - Better UI.
 - More settings.
 - More testing.
-- Devs of the game hopefully adding useful logs when acquiring cards so OCR isn't needed.
+- Devs of the game hopefully adding useful logs when acquiring cards so AI/OCR isn't needed.
 
 # Build (Windows)
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), use `uv python install 3.12`, `uv venv --python 3.12` and `uv sync` on the repository folder.\
-Then you need to clone [Ultralytics Yolov5](https://github.com/ultralytics/yolov5) repository onto the home directory of this repository.\
 Finally you need to install [Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) and paste the folder to the home directory of this repository. Don't forget to rename the folder to `tesseract` after pasting it.
 
 To build the application, I use [PyInstaller](https://pyinstaller.org/en/stable/installation.html).\
 Then, use this command on the repo's home directory for onedir output (You can use onefile but it's more susceptible to getting a false positive from a AV).
 ```
-python -m PyInstaller --noconfirm --onedir --noconsole --icon "./assets/icons/favicon.ico" --name "Deepwoken Helper" --collect-data=ultralytics   "./deepwokenhelper/__main__.py"
+python -m PyInstaller --noconfirm --onedir --noconsole --icon "./assets/icons/favicon.ico" --name "Deepwoken Helper"   "./deepwokenhelper/__main__.py"
 ```
-Finally copy `assets`, `tesseract` and `yolov5` folder into the output folder that has the new .exe.
+Finally copy `assets` and `tesseract` folder into the output folder that has the new .exe.
 
 # Support
 If you really like this project, please consider making a small donation, it really helps and means a lot!
