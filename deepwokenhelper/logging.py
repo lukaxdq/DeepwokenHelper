@@ -5,7 +5,10 @@ import logging
 from logging import FileHandler
 
 
-LOG_FOLDER = os.path.join(os.environ["APPDATA"], "DeepwokenHelper", "logs")
+from platformdirs import user_data_dir
+
+
+LOG_FOLDER = os.path.join(user_data_dir("DeepwokenHelper", False), "logs")
 MAX_FOLDER_SIZE_MB = 50
 MAX_LOG_FILES = 25
 
