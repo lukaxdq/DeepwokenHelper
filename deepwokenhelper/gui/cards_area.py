@@ -162,15 +162,55 @@ class Tooltip(QFrame):
             self.main_layout.addWidget(desc_label)
             desc_label.setFixedWidth(self.WIDTH)
 
-    def show_tooltip(self, x, y):
-        self.move(x, y)
-        self.show()
+    def _get_ideal_position(self, event: QMouseEvent):
+        right = event.globalPosition().toPoint().x() + 15
+        left = event.globalPosition().toPoint().x() - self.width() - 5
+        down = event.globalPosition().toPoint().y()
+        up = event.globalPosition().toPoint().y() - self.height()
+
+        positions = [
+            (right, down),
+            (left, down),
+            (right, up),
+            (left, up),
+        ]
+
+        final_position = None
+        for pos in positions:
+            rect = QRect()
+            rect.setX(pos[0])
+            rect.setY(pos[1])
+            rect.setRight(rect.x() + self.width())
+            rect.setBottom(rect.y() + self.height())
+
+            if self.__rect_contained_by_screen(rect):
+                final_position = pos
+                break
+
+        return final_position
+
+    def __rect_contained_by_screen(self, rect: QRect) -> bool:
+        return any(
+            screen.geometry().contains(rect) for screen in QApplication.screens()
+        )
+
+    def show_tooltip(self, event: QEvent):
+        self.adjustSize()
+
+        final_position = self._get_ideal_position(event)
+
+        if final_position:
+            self.move(final_position[0], final_position[1])
+            self.show()
+
+    def move_tooltip(self, event: QEvent):
+        final_position = self._get_ideal_position(event)
+
+        if final_position:
+            self.move(final_position[0], final_position[1])
 
     def hide_tooltip(self):
         self.hide()
-
-    def move_tooltip(self, x, y):
-        self.move(x, y)
 
 
 class Card(QWidget):
@@ -297,16 +337,10 @@ class Card(QWidget):
         self.setLayout(layout)
 
     def show_custom_tooltip(self, event: QEnterEvent, tooltip: Tooltip):
-        tooltip.show_tooltip(
-            event.globalPosition().toPoint().x() + 15,
-            event.globalPosition().toPoint().y(),
-        )
+        tooltip.show_tooltip(event)
 
     def move_custom_tooltip(self, event: QMouseEvent, tooltip: Tooltip):
-        tooltip.move_tooltip(
-            event.globalPosition().toPoint().x() + 15,
-            event.globalPosition().toPoint().y(),
-        )
+        tooltip.move_tooltip(event)
 
     def hide_custom_tooltip(self, tooltip: Tooltip):
         tooltip.hide_tooltip()
