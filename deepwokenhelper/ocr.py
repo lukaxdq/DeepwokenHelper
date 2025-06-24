@@ -11,8 +11,7 @@ import pytesseract
 import imutils
 from pynput import keyboard
 from thefuzz import fuzz
-
-from ultralytics import YOLO
+import onnxruntime as ort
 from windows_capture import WindowsCapture, Frame, InternalCaptureControl
 
 import win32gui
@@ -48,24 +47,11 @@ class DeepwokenOCR(QObject):
     def start(self):
         self.helper.loadingSignal.emit(True)
 
-        from ultralytics.utils import torch_utils
-
-        # Fix for flashing command line with pyinstaller
-        torch_utils.get_cpu_info = self.fixed_get_cpu_info
-
-        self.model = YOLO("./assets/title_model.onnx", "detect")
-        self.model(np.zeros((640, 640, 3), dtype=np.uint8))
+        self.model = YOLOModel("./assets/deepwoken-yolov11n-nms.onnx", conf_thres=0.25)
 
         self.hotkeys = Hotkeys(self)
 
         self.helper.loadingSignal.emit(False)
-
-    def fixed_get_cpu_info(self):
-        import wmi
-
-        c = wmi.WMI()
-        string = c.Win32_Processor()[0].Name
-        return string.replace("(R)", "").replace("CPU ", "").replace("@ ", "")
 
     def get_window_log(self):
         log_location = os.environ["LOCALAPPDATA"] + r"\Roblox\logs"
@@ -234,52 +220,58 @@ class DeepwokenOCR(QObject):
         screenshot = Screenshot(self).get_screenshot()
         gray = cv2.cvtColor(screenshot.copy(), cv2.COLOR_RGB2GRAY)
 
-        results = self.model(screenshot, iou=0.5)[0].cpu().numpy()
+        results = self.model.predict(screenshot)
 
         matches_dict = {}
 
         # test = screenshot.copy()
 
-        # cv2.imwrite('./image.png', test)
+        # cv2.imwrite("./image.png", test)
         # cv2.namedWindow("test", cv2.WINDOW_NORMAL)
-        # cv2.imshow('test', test)
+        # cv2.imshow("test", test)
         # cv2.waitKey(0)
 
-        for box in results.boxes:
-            if box.conf[0] >= 0.25:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
+        # for box in results.boxes:
+        for box in results:
+            # x1, y1, x2, y2 = map(int, box.xyxy[0])
+            x1, y1, x2, y2 = map(int, box[:4])
 
-                # cv2.rectangle(test, (x1-15, y1-15), (x2+15, y2+25), (0, 255, 0), 2)
-                # cv2.namedWindow("test", cv2.WINDOW_NORMAL)
-                # cv2.imshow('test', test)
-                # cv2.waitKey(0)
-                # cv2.destroyAllWindows()
+            # cv2.rectangle(test, (x1 - 15, y1 - 15), (x2 + 15, y2 + 25), (0, 255, 0), 2)
 
-                thresh = cv2.adaptiveThreshold(
-                    gray[y1 - 15 : y2 + 25, x1 - 15 : x2 + 15],
-                    255,
-                    cv2.ADAPTIVE_THRESH_MEAN_C,
-                    cv2.THRESH_BINARY_INV,
-                    21,
-                    10,
-                )
-                thresh = self.extract_text(thresh)
-                thresh = cv2.bitwise_not(thresh)
+            # cv2.namedWindow("test", cv2.WINDOW_NORMAL)
+            # cv2.imshow("test", test)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
 
-                text = pytesseract.image_to_string(
-                    thresh,
-                    lang="eng",
-                    config="--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ",
-                )
-                text = text.replace("\n", "")
-                match = self.get_closest_match(text)
+            thresh = cv2.adaptiveThreshold(
+                gray[y1 - 15 : y2 + 25, x1 - 15 : x2 + 15],
+                255,
+                cv2.ADAPTIVE_THRESH_MEAN_C,
+                cv2.THRESH_BINARY_INV,
+                21,
+                10,
+            )
+            thresh = self.extract_text(thresh)
+            thresh = cv2.bitwise_not(thresh)
 
-                if not match:
-                    continue
+            text: str = pytesseract.image_to_string(
+                thresh,
+                lang="eng",
+                config="--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ",
+            )
+            text = text.replace("\n", "")
+            match = self.get_closest_match(text)
 
-                logger.info(f"{text} | {match['name']}")
+            if not match:
+                continue
 
-                matches_dict[x1] = match
+            logger.info(f"{text} | {match['name']}")
+
+            matches_dict[x1] = match
+
+        # cv2.namedWindow("test", cv2.WINDOW_NORMAL)
+        # cv2.imshow("test", test)
+        # cv2.waitKey(0)
 
         sorted_matches = [matches_dict[key] for key in sorted(matches_dict.keys())]
 
@@ -287,6 +279,106 @@ class DeepwokenOCR(QObject):
 
         logger.info("Done processing cards.")
         self.helper.loadingSignal.emit(False)
+
+
+class YOLOModel:
+    def __init__(self, model_path: str, conf_thres: float = 0.25):
+        # from ultralytics.utils import torch_utils
+
+        # # Fix for flashing command line with pyinstaller
+        # torch_utils.get_cpu_info = self.fixed_get_cpu_info
+
+        # self.model = YOLO(model_path)
+        # self.model(np.zeros((640, 640, 3), dtype=np.uint8))
+
+        self.model = ort.InferenceSession(model_path)
+        self.conf_thres = conf_thres
+
+    def predict(self, img: np.ndarray):
+        tensor = self.preprocess(img)
+        results = self.inference(tensor)
+        results = self.postprocess(results, img.shape[:2])
+        return results
+
+    def preprocess(self, img: np.ndarray):
+        tensor = self.letterbox(img)
+        tensor = tensor.transpose(2, 0, 1)
+        tensor = np.expand_dims(tensor, axis=0)
+        tensor = np.ascontiguousarray(tensor)
+        tensor = tensor.astype(np.float32) / 255.0
+        return tensor
+
+    def inference(self, tensor: np.ndarray):
+        # results = self.model(img, iou=0.5)[0].cpu().numpy()
+
+        results = self.model.run(None, {"images": tensor})
+        return results[0][0]
+
+    def postprocess(self, results, img_shape):
+        results = results[results[:, 4] >= self.conf_thres, :5]
+
+        results[:, :4] = self.scale_boxes((640, 640), results[:, :4], img_shape)
+        return results
+
+    def scale_boxes(self, img1_shape, boxes, img0_shape):
+        """
+        Rescale bounding boxes from one image shape to another.
+
+        Rescales bounding boxes from img1_shape to img0_shape, accounting for padding and aspect ratio changes.
+        """
+        gain = min(
+            img1_shape[0] / img0_shape[0], img1_shape[1] / img0_shape[1]
+        )  # gain  = old / new
+        pad = (
+            round((img1_shape[1] - img0_shape[1] * gain) / 2 - 0.1),
+            round((img1_shape[0] - img0_shape[0] * gain) / 2 - 0.1),
+        )  # wh padding
+
+        boxes[..., 0] -= pad[0]  # x padding
+        boxes[..., 1] -= pad[1]  # y padding
+        boxes[..., 2] -= pad[0]  # x padding
+        boxes[..., 3] -= pad[1]  # y padding
+
+        boxes[..., :4] /= gain
+        return self.clip_boxes(boxes, img0_shape)
+
+    def clip_boxes(self, boxes, shape):
+        """Clip bounding boxes to image boundaries."""
+        boxes[..., [0, 2]] = boxes[..., [0, 2]].clip(0, shape[1])  # x1, x2
+        boxes[..., [1, 3]] = boxes[..., [1, 3]].clip(0, shape[0])  # y1, y2
+        return boxes
+
+    def letterbox(self, im: np.ndarray, new_shape=(640, 640)):
+        # Resize and pad image while meeting stride constraints
+        shape = im.shape[:2]  # current shape [height, width]
+
+        # Calculate ratio (new / old)
+        r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
+
+        # Compute new_unpad dimensions (maintain aspect ratio)
+        new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
+
+        # Compute padding dimensions
+        dw = new_shape[1] - new_unpad[0]  # width padding
+        dh = new_shape[0] - new_unpad[1]  # height padding
+
+        # Divide padding equally on both sides
+        dw /= 2
+        dh /= 2
+
+        # Resize image
+        if shape[::-1] != new_unpad:
+            im = cv2.resize(im, new_unpad, interpolation=cv2.INTER_LINEAR)
+
+        # Create letterboxed image
+        top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
+        left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+        im = cv2.copyMakeBorder(
+            im, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(114, 114, 114)
+        )
+
+        # return im, r, (dw, dh)
+        return im
 
 
 class Hotkeys:
