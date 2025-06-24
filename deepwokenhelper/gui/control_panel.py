@@ -1,5 +1,6 @@
 import re
 import os
+import sys
 import subprocess
 import logging
 import webbrowser
@@ -761,7 +762,12 @@ class InfoWindow(QWidget):
 
         if os.path.exists(LOG_FOLDER):
             try:
-                subprocess.Popen(f'explorer "{LOG_FOLDER}"')
+                if sys.platform == "win32":
+                    os.startfile(LOG_FOLDER)
+                elif sys.platform == "darwin":
+                    subprocess.Popen(["open", LOG_FOLDER])
+                else:
+                    subprocess.Popen(["xdg-open", LOG_FOLDER])
             except Exception as e:
                 logger.error(f"Failed to open logs folder: {e}")
         else:
