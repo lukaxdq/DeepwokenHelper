@@ -42,6 +42,11 @@ class DeepwokenOCR(QObject):
 
         self.processSignal.connect(self.process_ocr)
 
+        self.tesseract_lock = threading.Lock()
+
+        self.tmplt = cv2.imread("./assets/banner-mask.png", cv2.IMREAD_GRAYSCALE)
+        self.paint_tmplt = cv2.imread("./assets/paint-mask.png", cv2.IMREAD_GRAYSCALE)
+
         pytesseract.pytesseract.tesseract_cmd = r"./tesseract/tesseract"
 
     def start(self):
@@ -132,16 +137,18 @@ class DeepwokenOCR(QObject):
         best_max_loc = None
         best_tmplt_size = None
 
-        tmplt = cv2.imread("./assets/banner-mask.png", cv2.IMREAD_GRAYSCALE)
-        paint_tmptl = cv2.imread("./assets/paint-mask.png", cv2.IMREAD_GRAYSCALE)
-
         for idx in range(50):
             scaled_tmplt = imutils.resize(
-                tmplt.copy(), width=img.shape[1] - idx, inter=cv2.INTER_NEAREST_EXACT
+                self.tmplt.copy(),
+                width=img.shape[1] - idx,
+                inter=cv2.INTER_NEAREST_EXACT,
             )
 
             corrimg = cv2.matchTemplate(
-                img, scaled_tmplt, cv2.TM_CCORR_NORMED, mask=scaled_tmplt
+                img,
+                scaled_tmplt,
+                cv2.TM_CCORR_NORMED,
+                mask=scaled_tmplt,
             )
             _, max_val, _, max_loc = cv2.minMaxLoc(corrimg)
 
@@ -153,9 +160,11 @@ class DeepwokenOCR(QObject):
         ww, hh = best_tmplt_size
         xx, yy = best_max_loc
 
-        tmplt = imutils.resize(tmplt, width=ww, inter=cv2.INTER_NEAREST_EXACT)
-        paint_tmptl = imutils.resize(
-            paint_tmptl, width=ww, inter=cv2.INTER_NEAREST_EXACT
+        # tmplt = imutils.resize(
+        #     self.tmplt.copy(), width=ww, inter=cv2.INTER_NEAREST_EXACT
+        # )
+        paint_tmplt = imutils.resize(
+            self.paint_tmplt.copy(), width=ww, inter=cv2.INTER_NEAREST_EXACT
         )
 
         # Only 16:9
@@ -180,20 +189,20 @@ class DeepwokenOCR(QObject):
         )
         result[mask == 0] = 0
 
-        result[pt1[1] : pt2[1], pt1[0] : pt2[0]][paint_tmptl == 255] = 0
+        result[pt1[1] : pt2[1], pt1[0] : pt2[0]][paint_tmplt == 255] = 0
 
         # cv2.imwrite('./latest/image.png', img)
         # cv2.imwrite('./latest/template.png', tmplt)
-        # cv2.imwrite('./latest/paint.png', paint_tmptl)
+        # cv2.imwrite('./latest/paint.png', paint_tmplt)
         # cv2.imwrite('./latest/hidden.png', result)
 
         # cv2.namedWindow("image", cv2.WINDOW_NORMAL)
-        # cv2.imshow('image', img)
+        # cv2.imshow("image", img)
         # cv2.namedWindow("template", cv2.WINDOW_NORMAL)
-        # cv2.imshow('template', tmplt)
+        # cv2.imshow("template", tmplt)
 
         # cv2.namedWindow("hidden", cv2.WINDOW_NORMAL)
-        # cv2.imshow('hidden', result)
+        # cv2.imshow("hidden", result)
         # cv2.waitKey(0)
 
         return result
@@ -248,21 +257,23 @@ class DeepwokenOCR(QObject):
                 255,
                 cv2.ADAPTIVE_THRESH_MEAN_C,
                 cv2.THRESH_BINARY_INV,
-                21,
-                10,
+                7,
+                7,
             )
             thresh = self.extract_text(thresh)
             thresh = cv2.bitwise_not(thresh)
 
-            text: str = pytesseract.image_to_string(
-                thresh,
-                lang="eng",
-                config="--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ",
-            )
+            with self.tesseract_lock:
+                text: str = pytesseract.image_to_string(
+                    thresh,
+                    lang="eng",
+                    config="--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ",
+                )
             text = text.replace("\n", "")
             match = self.get_closest_match(text)
 
             if not match:
+                logger.info(f"{text} | None")
                 continue
 
             logger.info(f"{text} | {match['name']}")
@@ -513,7 +524,7 @@ class Screenshot:
         # convert the raw data into a format opencv can read
         # dataBitMap.SaveBitmapFile(cDC, 'debug.bmp')
         signedIntsArray = dataBitMap.GetBitmapBits(True)
-        img = np.fromstring(signedIntsArray, dtype="uint8")
+        img = np.frombuffer(signedIntsArray, dtype="uint8")
         img.shape = (h, w, 4)
 
         dcObj.DeleteDC()
