@@ -539,8 +539,10 @@ class Screenshot:
             match = re.search(search_pattern, line)
 
             if match:
-                renderer = match[1].replace("FFlagDebugGraphicsPrefer", "")
-                return renderer
+                return match[1].replace("FFlagDebugGraphicsPrefer", "")
+
+    def is_image_white(self, img: np.ndarray):
+        return False if img.size == 0 else np.all(img == 255)
 
     def get_screenshot(self):
         if self.screenshot_method == ScreenshotMethod.AUTOMATIC:
@@ -552,6 +554,9 @@ class Screenshot:
             else:
                 logger.info("Using BitBlt screenshot method.")
                 screenshot = self.bitblt_method()
+                if self.is_image_white(screenshot):
+                    logger.warning("BitBlt returned a white image, switching to WGC.")
+                    screenshot = self.wgc_method()
 
         elif self.screenshot_method == ScreenshotMethod.BITBLT:
             logger.info("Using BitBlt screenshot method.")
@@ -562,7 +567,7 @@ class Screenshot:
             screenshot = self.wgc_method()
 
         # cv2.namedWindow("test", cv2.WINDOW_NORMAL)
-        # cv2.imshow('test', screenshot)
+        # cv2.imshow("test", screenshot)
         # cv2.waitKey(0)
 
         return screenshot
