@@ -629,7 +629,12 @@ class InfoWindow(QWidget):
 
     def set_icon_group(self):
         icon_group = QGroupBox("Icons")
-        icon_group.setFont(self.fontText)
+
+        icon_font = QFont(self.fontText)
+        icon_font.setBold(True)
+        icon_font.setPointSize(14)
+        icon_group.setFont(icon_font)
+
         icon_group.setStyleSheet("color: rgb(255, 255, 255);")
         icon_layout = QVBoxLayout(icon_group)
 
@@ -744,7 +749,12 @@ class InfoWindow(QWidget):
 
     def set_tutorial_group(self):
         tutorial_group = QGroupBox("Tutorial")
-        tutorial_group.setFont(self.fontText)
+
+        tutorial_font = QFont(self.fontText)
+        tutorial_font.setBold(True)
+        tutorial_font.setPointSize(14)
+        tutorial_group.setFont(tutorial_font)
+
         tutorial_group.setStyleSheet("color: rgb(255, 255, 255);")
         layout = QVBoxLayout(tutorial_group)
 
