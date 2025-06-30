@@ -61,11 +61,27 @@ class ControlPanel(QWidget):
         spinner.setRevolutionsPerSecond(1)
         self.spinner = spinner
 
-        spinner.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        # spinner.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout.addWidget(
-            spinner, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom
+            spinner,
+            alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom,
+            stretch=0,
         )
 
+        self.loading_text = QLabel()
+        self.loading_text.setStyleSheet("color: #000000; font-size: 12px;")
+        # self.loading_text.setSizePolicy(
+        #     QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        # )
+        self.loading_text.hide()
+
+        layout.addWidget(
+            self.loading_text,
+            alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom,
+            stretch=0,
+        )
+
+        layout.addStretch(1)
         # layout.addItem(QSpacerItem(0, 0, hPolicy=QSizePolicy.Policy.Expanding))
 
         tag = QLabel(f"<b>v{deepwokenhelper.__version__} @Tuxsuper</b>")
@@ -183,6 +199,10 @@ class ControlPanel(QWidget):
             self.comboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
         )
         layout.addWidget(self.comboBox, 5)
+
+        self.timer = QTimer()
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.hide_message)
 
         build_layout.addLayout(layout)
 
@@ -306,6 +326,15 @@ class ControlPanel(QWidget):
         self.comboBox.currentIndexChanged.connect(self.on_combobox_changed)
 
         return currentIdx
+
+    def show_message(self, message):
+        self.loading_text.setText(f"<b>{message}</b>")
+        self.loading_text.show()
+
+        self.timer.start(5000)
+
+    def hide_message(self):
+        self.loading_text.hide()
 
     def buttons(self):
         buttons_widget = QWidget()
