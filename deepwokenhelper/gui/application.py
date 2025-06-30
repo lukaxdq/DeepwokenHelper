@@ -19,7 +19,8 @@ logger = logging.getLogger("helper")
 
 
 class DeepwokenHelper(QMainWindow):
-    loadingSignal = pyqtSignal(bool)
+    start_loading_signal = pyqtSignal(object)
+    stop_loading_signal = pyqtSignal()
     errorSignal = pyqtSignal(str)
 
     def __init__(self):
@@ -28,7 +29,8 @@ class DeepwokenHelper(QMainWindow):
         self.active_tasks = 0
         self.mutex = QMutex()
 
-        self.loadingSignal.connect(self.loading)
+        self.start_loading_signal.connect(self.start_loading)
+        self.stop_loading_signal.connect(self.stop_loading)
         self.errorSignal.connect(self.error_message)
 
         self.settings = QSettings("Tuxsuper", "DeepwokenHelper")
@@ -129,18 +131,26 @@ class DeepwokenHelper(QMainWindow):
             label_widget = Card(self.ocr, data)
             self.cards_layout.addWidget(label_widget, 1)
 
-    @pyqtSlot(bool)
-    def loading(self, isStart):
+    @pyqtSlot(object)
+    def start_loading(self, message=None):
         self.mutex.lock()
 
-        if isStart:
-            self.active_tasks += 1
-            if self.active_tasks == 1:
-                self.stats.spinner.start()
-        else:
-            self.active_tasks -= 1
-            if self.active_tasks == 0:
-                self.stats.spinner.stop()
+        self.active_tasks += 1
+        if self.active_tasks == 1:
+            self.stats.spinner.start()
+            if message:
+                self.stats.show_message(message)
+
+        self.mutex.unlock()
+
+    @pyqtSlot()
+    def stop_loading(self):
+        self.mutex.lock()
+
+        self.active_tasks -= 1
+        if self.active_tasks == 0:
+            self.stats.spinner.stop()
+            self.stats.hide_message()
 
         self.mutex.unlock()
 

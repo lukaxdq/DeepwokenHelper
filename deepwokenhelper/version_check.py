@@ -31,7 +31,7 @@ class UpdateChecker(QThread):
 
     def run(self):
         logger.info("Checking for new updates...")
-        self.helper.loadingSignal.emit(True)
+        self.helper.start_loading_signal.emit("Checking for updates...")
 
         current_time = QDateTime.currentDateTime()
         if self.last_check_time:
@@ -61,7 +61,7 @@ class UpdateChecker(QThread):
                     "Error checking for updates.\nPlease check your internet connection"
                 )
 
-        self.helper.loadingSignal.emit(False)
+        self.helper.stop_loading_signal.emit()
 
 
 class UpdateWindow(QMessageBox):

@@ -270,8 +270,13 @@ class ControlPanel(QWidget):
 
         return build_widget
 
+    def change_combobox(self, index):
+        self.helper.start_loading_signal.emit("Changing Build...")
+        self.on_combobox_changed(index)
+        self.helper.stop_loading_signal.emit()
+
     def on_combobox_changed(self, index):
-        self.helper.loadingSignal.emit(True)
+        self.helper.start_loading_signal.emit(None)
         self.traits_widget.setEnabled(False)
         self.builds_widget.setEnabled(False)
 
@@ -297,7 +302,8 @@ class ControlPanel(QWidget):
         self.isAdding = False
         self.traits_widget.setEnabled(True)
         self.builds_widget.setEnabled(True)
-        self.helper.loadingSignal.emit(False)
+
+        self.helper.stop_loading_signal.emit()
 
     def get_name_author(self):
         name = ""
@@ -327,6 +333,7 @@ class ControlPanel(QWidget):
         self.helper.settings.setValue("builds", builds_values)
 
     def load_list_builds(self):
+        self.helper.start_loading_signal.emit("Loading Builds...")
         self.isAdding = True
 
         build_values = self.helper.settings.value("builds", [])
@@ -341,7 +348,9 @@ class ControlPanel(QWidget):
 
         self.comboBox.setCurrentIndex(currentIdx)
         self.on_combobox_changed(currentIdx)
-        self.comboBox.currentIndexChanged.connect(self.on_combobox_changed)
+        self.comboBox.currentIndexChanged.connect(self.change_combobox)
+
+        self.helper.stop_loading_signal.emit()
 
         return currentIdx
 
@@ -453,17 +462,20 @@ class ControlPanel(QWidget):
             return
 
         logger.info("Deleting Build")
+        self.helper.start_loading_signal.emit("Deleting Build...")
 
         index = self.comboBox.currentIndex()
         if index == -1:
             return
 
-        self.comboBox.currentIndexChanged.disconnect(self.on_combobox_changed)
+        self.comboBox.currentIndexChanged.disconnect(self.change_combobox)
         self.comboBox.removeItem(index)
-        self.comboBox.currentIndexChanged.connect(self.on_combobox_changed)
+        self.comboBox.currentIndexChanged.connect(self.change_combobox)
 
         self.on_combobox_changed(index)
         self.save_builds()
+
+        self.helper.stop_loading_signal.emit()
 
     def github_clicked(self):
         github = GithubWindow(self)
@@ -549,7 +561,7 @@ class AddDialog(QDialog):
 
     def accept(self):
         self.stats.isAdding = True
-        self.stats.helper.loadingSignal.emit(True)
+        self.stats.helper.start_loading_signal.emit("Adding Build...")
 
         self.worker = self.AddData(self)
         self.worker.buildProcessed.connect(self.on_build_processed)
@@ -557,17 +569,15 @@ class AddDialog(QDialog):
         self.worker.start()
 
     def on_build_processed(self, build_name, build_id):
-        self.stats.comboBox.currentIndexChanged.disconnect(
-            self.stats.on_combobox_changed
-        )
+        self.stats.comboBox.currentIndexChanged.disconnect(self.stats.change_combobox)
         self.stats.comboBox.insertItem(0, build_name, build_id)
         self.stats.comboBox.setCurrentIndex(0)
-        self.stats.comboBox.currentIndexChanged.connect(self.stats.on_combobox_changed)
+        self.stats.comboBox.currentIndexChanged.connect(self.stats.change_combobox)
 
         self.stats.on_combobox_changed(0)
         self.stats.save_builds()
 
-        self.stats.helper.loadingSignal.emit(False)
+        self.stats.helper.stop_loading_signal.emit()
         self.done(0)
 
     def on_error(self, message):
@@ -575,7 +585,7 @@ class AddDialog(QDialog):
         logger.warning(f"Error: {message}")
 
         self.lineEdit.clear()
-        self.stats.helper.loadingSignal.emit(False)
+        self.stats.helper.stop_loading_signal.emit()
 
         self.error_label.setText(f"Error: {message}")
         self.error_label.show()
@@ -627,6 +637,8 @@ class AddDialog(QDialog):
 class GithubWindow(QMessageBox):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.stats: ControlPanel = parent
+
         # self.setWindowFlag(Qt.WindowType.Popup)
         self.setWindowTitle("GitHub")
         bg_color = self.palette().color(QPalette.ColorRole.Window)
@@ -649,9 +661,12 @@ class GithubWindow(QMessageBox):
 
     def accept(self):
         logger.info("Opening github...")
+
         url = "https://github.com/Tuxsupa/DeepwokenHelper"
         webbrowser.open(url)
         self.close()
+
+        self.stats.show_message("Opened GitHub link!")
 
     def reject(self):
         self.close()

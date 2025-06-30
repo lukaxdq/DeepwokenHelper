@@ -50,13 +50,13 @@ class DeepwokenOCR(QObject):
         pytesseract.pytesseract.tesseract_cmd = r"./tesseract/tesseract"
 
     def start(self):
-        self.helper.loadingSignal.emit(True)
+        self.helper.start_loading_signal.emit("Initiating YOLO Model...")
 
         self.model = YOLOModel("./assets/deepwoken-yolov11n-nms.onnx", conf_thres=0.25)
 
         self.hotkeys = Hotkeys(self)
 
-        self.helper.loadingSignal.emit(False)
+        self.helper.stop_loading_signal.emit()
 
     def get_window_log(self):
         log_location = os.environ["LOCALAPPDATA"] + r"\Roblox\logs"
@@ -210,11 +210,11 @@ class DeepwokenOCR(QObject):
     @pyqtSlot()
     def process_ocr(self):
         logger.info("Taking screenshot...")
-        self.helper.loadingSignal.emit(True)
+        self.helper.start_loading_signal.emit("Processing screenshot...")
 
         self.hwnd = win32gui.FindWindow(None, "Roblox")
         if not self.hwnd:
-            self.helper.loadingSignal.emit(False)
+            self.helper.stop_loading_signal.emit()
             self.helper.errorSignal.emit("Roblox window not found.")
             raise Exception("Roblox not found")
 
@@ -223,7 +223,7 @@ class DeepwokenOCR(QObject):
 
         logger.info(self.choice_type)
         if self.choice_type in ["nil", "Trait"]:
-            self.helper.loadingSignal.emit(False)
+            self.helper.stop_loading_signal.emit()
             return
 
         screenshot = Screenshot(self).get_screenshot()
@@ -289,7 +289,7 @@ class DeepwokenOCR(QObject):
         self.addCardsSignal.emit(sorted_matches)
 
         logger.info("Done processing cards.")
-        self.helper.loadingSignal.emit(False)
+        self.helper.stop_loading_signal.emit()
 
 
 class YOLOModel:
