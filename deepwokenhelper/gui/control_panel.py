@@ -200,6 +200,24 @@ class ControlPanel(QWidget):
         )
         layout.addWidget(self.comboBox, 5)
 
+        copy_button = QPushButton()
+        copy_button.setStyleSheet(
+            "background: #04100d; border-image: url(./assets/gui/border.png); border-width: 15px; padding: -10px; color: #ffffff;"
+        )
+        copy_button.setIcon(QIcon("./assets/gui/copy.png"))
+        copy_button.setIconSize(QSize(20, 20))
+        copy_button.clicked.connect(self.copy_build)
+        layout.addWidget(copy_button)
+
+        open_button = QPushButton()
+        open_button.setStyleSheet(
+            "background: #04100d; border-image: url(./assets/gui/border.png); border-width: 15px; padding: -10px; color: #ffffff;"
+        )
+        open_button.setIcon(QIcon("./assets/gui/open.png"))
+        open_button.setIconSize(QSize(20, 20))
+        open_button.clicked.connect(self.open_build)
+        layout.addWidget(open_button)
+
         self.timer = QTimer()
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.hide_message)
@@ -326,6 +344,31 @@ class ControlPanel(QWidget):
         self.comboBox.currentIndexChanged.connect(self.on_combobox_changed)
 
         return currentIdx
+
+    def copy_build(self):
+        current_id = self.comboBox.currentData()
+        if not current_id:
+            return
+
+        current_link = f"https://deepwoken.co/builder?id={current_id}"
+        logger.info(f"Copying build link: {current_link}")
+
+        clipboard = QApplication.clipboard()
+        clipboard.setText(current_link)
+
+        self.show_message("Copied build!")
+
+    def open_build(self):
+        current_id = self.comboBox.currentData()
+        if not current_id:
+            return
+
+        current_link = f"https://deepwoken.co/builder?id={current_id}"
+        logger.info(f"Opening build link: {current_link}")
+
+        QDesktopServices.openUrl(QUrl(current_link))
+
+        self.show_message("Opened build!")
 
     def show_message(self, message):
         self.loading_text.setText(f"<b>{message}</b>")
